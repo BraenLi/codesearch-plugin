@@ -51,6 +51,7 @@ class LSPClient:
         self._read_buffer = b""
         self._running = False
         self._initialized = False
+        self._read_task: Optional[asyncio.Task] = None
 
     async def start_server(self) -> bool:
         """Start the LSP server process."""
@@ -62,7 +63,10 @@ class LSPClient:
                 stderr=asyncio.subprocess.PIPE,
             )
             self._running = True
-            asyncio.create_task(self._read_messages())
+            # Start the message reading task and wait for it to be ready
+            self._read_task = asyncio.create_task(self._read_messages())
+            # Give the server time to initialize
+            await asyncio.sleep(0.5)
             return True
         except FileNotFoundError:
             raise RuntimeError(
