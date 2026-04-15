@@ -5,6 +5,7 @@ from codesearch.builder.chunker import CodeChunker
 from codesearch.builder.embeddings import EmbeddingGenerator
 from codesearch.builder.storage import VectorStore
 from codesearch.builder.indexer import CodeIndexer
+from codesearch.builder.lsp_client import LSPClient
 
 __all__ = [
     "CParser",
@@ -12,4 +13,5 @@ __all__ = [
     "EmbeddingGenerator",
     "VectorStore",
     "CodeIndexer",
+    "LSPClient",
 ]
