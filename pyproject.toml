@@ -40,6 +40,14 @@ dev = [
     "ruff>=0.1.0",
 ]
 
+# Clangd support (optional, system installation required)
+# This is a meta-package for documentation purposes
+clangd = []
+
+full = [
+    "codesearch-plugin[dev,clangd]",
+]
+
 [project.scripts]
 codesearch-mcp = "codesearch.mcp.server:main"
 

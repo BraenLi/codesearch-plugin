@@ -66,6 +66,10 @@ class IndexConfig:
         default_factory=lambda: ["**/test/**", "**/tests/**", "**/vendor/**"]
     )
 
+    # Parser configuration
+    use_clangd: bool = False  # Whether to use clangd instead of tree-sitter
+    clangd_path: Optional[str] = None  # Path to clangd executable
+
 
 class CodeIndexer:
     """
@@ -89,8 +93,13 @@ class CodeIndexer:
         self.config = config or IndexConfig()
         self.stats = IndexStats()
 
-        # Initialize components
-        self.parser = CParser()
+        # Initialize parser based on configuration
+        if self.config.use_clangd:
+            from codesearch.builder.clangd_parser import ClangdParser
+            self.parser = ClangdParser(clangd_path=self.config.clangd_path)
+        else:
+            self.parser = CParser()
+
         self.chunker = CodeChunker(strategy=self.config.chunk_strategy)
 
         self.embedding_generator = EmbeddingGenerator(
@@ -187,14 +196,21 @@ class CodeIndexer:
 
     async def _index_file(self, file_path: Path) -> None:
         """Index a single file."""
-        # Parse the file
-        tree = self.parser.parse_file(file_path)
+        nodes: list[ASTNode] = []
 
-        with open(file_path, "rb") as f:
-            source = f.read()
+        # Use appropriate parser API
+        if self.config.use_clangd:
+            # ClangdParser returns list of ASTNode directly
+            nodes = await self.parser.parse_file(file_path)
+        else:
+            # CParser returns Tree, need to extract nodes
+            tree = self.parser.parse_file(file_path)
 
-        # Extract AST nodes
-        nodes = self.parser.extract_nodes(tree, source, str(file_path))
+            with open(file_path, "rb") as f:
+                source = f.read()
+
+            # Extract AST nodes
+            nodes = self.parser.extract_nodes(tree, source, str(file_path))
 
         if not nodes:
             return

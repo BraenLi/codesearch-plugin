@@ -9,6 +9,7 @@ __version__ = "0.1.0"
 __author__ = "codesearch-plugin"
 
 from codesearch.builder.indexer import CodeIndexer
+from codesearch.builder.clangd_parser import ClangdParser
 from codesearch.mcp.server import create_mcp_server
 
-__all__ = ["CodeIndexer", "create_mcp_server"]
+__all__ = ["CodeIndexer", "ClangdParser", "create_mcp_server"]
