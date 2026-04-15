@@ -42,14 +42,15 @@ class LSPClient:
 
         Args:
             server_command: Command to start LSP server.
-                           Default: ["clangd"]
+                           Default: ["clangd", "--enable-config-flag"]
         """
-        self.server_command = server_command or ["clangd"]
+        self.server_command = server_command or ["clangd", "--enable-config-flag"]
         self._process: Optional[asyncio.subprocess.Process] = None
         self._message_id = 0
         self._pending_requests: dict[int, asyncio.Future] = {}
         self._read_buffer = b""
         self._running = False
+        self._initialized = False
 
     async def start_server(self) -> bool:
         """Start the LSP server process."""
@@ -119,6 +120,15 @@ class LSPClient:
         except asyncio.TimeoutError:
             del self._pending_requests[self._message_id]
             raise RuntimeError(f"Request timeout for method: {method}")
+
+    async def send_notification(self, method: str, params: dict) -> None:
+        """Send an LSP notification (no response expected)."""
+        message = {
+            "jsonrpc": "2.0",
+            "method": method,
+            "params": params,
+        }
+        await self._send_message(message)
 
     async def _send_message(self, message: dict) -> None:
         """Send a message to the LSP server."""
