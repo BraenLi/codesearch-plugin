@@ -6,6 +6,7 @@ from codesearch.builder.chunker import CodeChunker, CodeChunk, ChunkStrategy
 from codesearch.builder.embeddings import EmbeddingGenerator, EmbeddingProvider
 from codesearch.builder.storage import VectorStore
 from codesearch.builder.indexer import CodeIndexer, IndexConfig
+from codesearch.builder.lsp_client import LSPClient
 
 __all__ = [
     # Parser
@@ -26,4 +27,6 @@ __all__ = [
     # Indexer
     "CodeIndexer",
     "IndexConfig",
+    # LSP
+    "LSPClient",
 ]
