@@ -4,11 +4,12 @@ Semantic code search toolkit for AI coding agents (Claude Code, OpenCode, etc.) 
 
 ## Features
 
-- **AST-level indexing** using tree-sitter for accurate code structure understanding
+- **AST-level indexing** using tree-sitter or clangd LSP for accurate code structure understanding
 - **Vector database** (ChromaDB) for semantic search capabilities
 - **MCP server** for seamless integration with AI coding agents
 - **Hook system** for intelligent subagent triggering
 - **Language support** starting with C, extensible to other languages
+- **Clangd support** for more precise parsing with full semantic understanding
 
 ## Architecture
 
@@ -53,7 +54,11 @@ pip install -e ".[dev]"
 ### Requirements
 
 - Python 3.10+
-- tree-sitter-c (C language parser)
+- tree-sitter-c (C language parser, optional if using clangd)
+- clangd (recommended for better accuracy) - 安装方式:
+  - Ubuntu/Debian: `apt install clangd`
+  - macOS: 系统自带或使用 `brew install llvm`
+  - Windows: 安装 LLVM
 - ChromaDB (vector database)
 - OpenAI API key (for embeddings)
 
@@ -79,6 +84,30 @@ async def main():
 
     print(f"Indexed {stats.files_processed} files")
     print(f"Created {stats.chunks_created} chunks")
+
+asyncio.run(main())
+```
+
+### Using Clangd (Recommended)
+
+For more accurate parsing with full semantic understanding:
+
+```python
+import asyncio
+from codesearch import CodeIndexer
+from codesearch.builder.indexer import IndexConfig
+
+async def main():
+    config = IndexConfig(
+        persist_directory="./.codesearch_index",
+        use_clangd=True,  # Enable clangd for better accuracy
+        embedding_api_key="your-openai-api-key",
+    )
+
+    indexer = CodeIndexer(config=config)
+    stats = await indexer.build_index("/path/to/your/c/codebase")
+
+    print(f"Indexed {stats.files_processed} files with clangd")
 
 asyncio.run(main())
 ```
@@ -219,6 +248,8 @@ mcp:
 | `collection_name` | `code_chunks` | ChromaDB collection name |
 | `include_patterns` | `["*.c", "*.h"]` | File patterns to include |
 | `exclude_patterns` | `["**/vendor/**"]` | File patterns to exclude |
+| `use_clangd` | `False` | Use clangd LSP parser instead of tree-sitter (recommended) |
+| `clangd_path` | `None` | Path to clangd executable (default: find in PATH) |
 
 ### Chunk Strategies
 
