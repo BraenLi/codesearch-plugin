@@ -75,7 +75,7 @@ class ClangdParser:
 
     async def start(self) -> None:
         """Start the clangd server."""
-        self._client = LSPClient(server_command=[self.clangd_path])
+        self._client = LSPClient(clangd_path=self.clangd_path)
         await self._client.start_server()
 
     async def stop(self) -> None:
