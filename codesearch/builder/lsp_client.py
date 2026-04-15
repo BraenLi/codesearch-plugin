@@ -183,6 +183,19 @@ class LSPClient:
         result = await self.send_request("initialize", params)
         return result
 
+    async def send_notification(self, method: str, params: dict[str, Any] | None = None) -> None:
+        """Send LSP notification (no response expected).
+
+        Args:
+            method: LSP method name (e.g., "textDocument/didOpen").
+            params: Notification parameters.
+        """
+        if self._process is None:
+            raise RuntimeError("LSP server is not running. Call start_server() first.")
+
+        message = LSPMessage(method=method, params=params)
+        await self._send_message(message)
+
     async def send_request(
         self, method: str, params: dict[str, Any] | None = None
     ) -> dict[str, Any]:
