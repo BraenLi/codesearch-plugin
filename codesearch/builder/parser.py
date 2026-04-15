@@ -1,8 +1,9 @@
 """
-Language parsers using tree-sitter for AST extraction.
+Language parsers for AST extraction.
 
-This module provides parsers for different languages using tree-sitter.
-Currently supports C, with extensibility for other languages.
+This module provides parsers for different languages:
+- CParser: tree-sitter-based C parser
+- ClangdParser: LSP-based C/C++ parser using clangd (import from clangd_parser)
 """
 
 from dataclasses import dataclass, field
@@ -12,6 +13,17 @@ from typing import Optional
 
 import tree_sitter_c as tsc
 from tree_sitter import Parser, Tree, Node, Language
+
+
+# Re-export ClangdParser and SymbolInfo for convenience
+# Import here to avoid circular dependencies
+__all__ = [
+    "ASTNode",
+    "NodeType",
+    "CParser",
+    "ClangdParser",
+    "SymbolInfo",
+]
 
 
 class NodeType(Enum):
@@ -275,3 +287,13 @@ class CParser:
             return None
 
         return find_function(root_node)
+
+
+# Import ClangdParser and SymbolInfo for re-export
+# This is done at the end to avoid circular dependency issues
+try:
+    from codesearch.builder.clangd_parser import ClangdParser, SymbolInfo
+except ImportError:
+    # ClangdParser may not be available if clangd_parser module is not installed
+    ClangdParser = None  # type: ignore
+    SymbolInfo = None  # type: ignore
