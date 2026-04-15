@@ -23,6 +23,35 @@ class LSPMessage:
     result: Optional[Any] = None
     error: Optional[dict] = None
 
+    def to_request_dict(self) -> dict:
+        """Convert to dictionary for sending request."""
+        return {
+            "jsonrpc": self.jsonrpc,
+            "id": self.id,
+            "method": self.method,
+            "params": self.params,
+        }
+
+    def to_notification_dict(self) -> dict:
+        """Convert to dictionary for sending notification (no id)."""
+        return {
+            "jsonrpc": self.jsonrpc,
+            "method": self.method,
+            "params": self.params,
+        }
+
+    @classmethod
+    def from_response(cls, data: dict) -> "LSPMessage":
+        """Parse incoming response into LSPMessage."""
+        return cls(
+            jsonrpc=data.get("jsonrpc", "2.0"),
+            id=data.get("id"),
+            method=data.get("method"),
+            params=data.get("params"),
+            result=data.get("result"),
+            error=data.get("error"),
+        )
+
 
 class LSPClient:
     """
@@ -107,17 +136,17 @@ class LSPClient:
     async def send_request(self, method: str, params: dict) -> Any:
         """Send an LSP request and wait for response."""
         self._message_id += 1
-        message = {
-            "jsonrpc": "2.0",
-            "id": self._message_id,
-            "method": method,
-            "params": params,
-        }
+
+        message = LSPMessage(
+            id=self._message_id,
+            method=method,
+            params=params,
+        )
 
         future = asyncio.Future()
         self._pending_requests[self._message_id] = future
 
-        await self._send_message(message)
+        await self._send_message(message.to_request_dict())
 
         try:
             return await asyncio.wait_for(future, timeout=30.0)
@@ -127,12 +156,11 @@ class LSPClient:
 
     async def send_notification(self, method: str, params: dict) -> None:
         """Send an LSP notification (no response expected)."""
-        message = {
-            "jsonrpc": "2.0",
-            "method": method,
-            "params": params,
-        }
-        await self._send_message(message)
+        message = LSPMessage(
+            method=method,
+            params=params,
+        )
+        await self._send_message(message.to_notification_dict())
 
     async def _send_message(self, message: dict) -> None:
         """Send a message to the LSP server."""
@@ -198,12 +226,14 @@ class LSPClient:
             except Exception:
                 break
 
-    def _handle_message(self, message: dict) -> None:
+    def _handle_message(self, data: dict) -> None:
         """Handle incoming LSP message."""
-        if "id" in message:
-            if message["id"] in self._pending_requests:
-                future = self._pending_requests.pop(message["id"])
-                if "error" in message:
-                    future.set_exception(RuntimeError(message["error"]))
+        message = LSPMessage.from_response(data)
+
+        if message.id is not None:
+            if message.id in self._pending_requests:
+                future = self._pending_requests.pop(message.id)
+                if message.error:
+                    future.set_exception(RuntimeError(message.error))
                 else:
-                    future.set_result(message.get("result"))
+                    future.set_result(message.result)
